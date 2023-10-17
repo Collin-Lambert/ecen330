@@ -6,6 +6,8 @@
 #include "touchscreen.h"
 #include "utils.h"
 
+#include <stdio.h>
+
 #define PERIOD_S 0.01
 #define CIRCLE_RADIUS_MAX 50
 #define MS_PER_S 1000

@@ -5,5 +5,16 @@
     "[cpp]": {
         "editor.formatOnSave": true,
     },
-    "C_Cpp.clang_format_fallbackStyle": "LLVM"
+    "C_Cpp.clang_format_fallbackStyle": "LLVM",
+    "files.associations": {
+        "xparameters.h": "c",
+        "xil_io.h": "c",
+        "switches.h": "c",
+        "display.h": "c",
+        "interrupts.h": "c",
+        "intervaltimer.h": "c",
+        "touchscreen.h": "c",
+        "clockcontrol.h": "c",
+        "minimax.h": "c"
+    }
 }
