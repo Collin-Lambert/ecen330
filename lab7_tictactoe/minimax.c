@@ -21,6 +21,8 @@
 
 #define DIAG_BOUND 3
 
+#define NULL_SPACE 20
+
 static tictactoe_location_t choice;
 
 typedef struct {
@@ -175,19 +177,32 @@ bool minimax_isGameOver(minimax_score_t score) {
 // false for min. true for max
 uint8_t minimax_getMinMaxIndex(minimax_score_t score_table[], bool min_or_max) {
 
-  uint8_t min_max_index = 0;
+  uint8_t min_max_index;
+
   tictactoe_location_t choice;
   minimax_score_t prev_score;
   minimax_score_t min_max_score;
 
-  min_max_score = score_table[0];
+  for (uint8_t index = 0; index < NUM_POSSIBLE_LOCATIONS; ++index) {
+    if (score_table[index] != NULL_SPACE) {
+      min_max_index = index;
+      min_max_score = score_table[index];
+      break;
+    }
+  }
+
+  // for (uint8_t index = 0; index < 9; ++index) {
+  //   printf("%3d", score_table[index]);
+  // }
+  // printf("\n");
 
   // Compute max
   if (min_or_max) {
     // printf("COMPUTING MAX\n");
-    for (uint8_t score_index = 1; score_index < NUM_POSSIBLE_LOCATIONS;
+    for (uint8_t score_index = 0; score_index < NUM_POSSIBLE_LOCATIONS;
          ++score_index) {
-      if (score_table[score_index] > min_max_score) {
+      if ((score_table[score_index] != NULL_SPACE) &&
+          (score_table[score_index] > min_max_score)) {
         min_max_score = score_table[score_index];
         min_max_index = score_index;
       }
@@ -196,9 +211,10 @@ uint8_t minimax_getMinMaxIndex(minimax_score_t score_table[], bool min_or_max) {
   // Compute min
   else {
     // printf("COMPUTING MIN\n");
-    for (uint8_t score_index = 1; score_index < NUM_POSSIBLE_LOCATIONS;
+    for (uint8_t score_index = 0; score_index < NUM_POSSIBLE_LOCATIONS;
          ++score_index) {
-      if (score_table[score_index] < min_max_score) {
+      if ((score_table[score_index] != NULL_SPACE) &&
+          (score_table[score_index] < min_max_score)) {
         min_max_score = score_table[score_index];
         min_max_index = score_index;
       }
@@ -210,9 +226,9 @@ uint8_t minimax_getMinMaxIndex(minimax_score_t score_table[], bool min_or_max) {
 
 void minimax_initializeBoardTable(board_table_t *table) {
   for (uint8_t i = 0; i < NUM_POSSIBLE_LOCATIONS; ++i) {
-    table->move_table[i].row = 0;
-    table->move_table[i].column = 0;
-    table->score_table[i] = 0;
+    table->move_table[i].row = NULL_SPACE;
+    table->move_table[i].column = NULL_SPACE;
+    table->score_table[i] = NULL_SPACE;
   }
 }
 
@@ -241,11 +257,8 @@ minimax_score_t minimax(tictactoe_board_t *board, bool is_Xs_turn,
     // }
     // printf("\n");
 
-    // for (uint8_t index = 0; index < 9; ++index) {
-    //   printf("%3d", board_table.score_table[index]);
-    // }
     // printf("\n");
-    return minimax_computeBoardScore(board, !is_Xs_turn);
+    return (minimax_computeBoardScore(board, !is_Xs_turn) / depth);
   }
 
   // Otherwise, you need to recurse.
@@ -260,8 +273,8 @@ minimax_score_t minimax(tictactoe_board_t *board, bool is_Xs_turn,
         board->squares[row][column] =
             is_Xs_turn ? MINIMAX_X_SQUARE : MINIMAX_O_SQUARE;
 
-        // Recursively call minimax to get the best score, assuming player
-        // choses to play at this location.
+        // Recursively call minimax to get the best score,
+        // assuming player choses to play at this location.
         // printf("DEPTH: %d\n", depth);
         // printf("NEW MOVE AT [%d][%d]\n", row, column);
         // for (uint8_t i = 0; i < 3; ++i) {
@@ -336,6 +349,7 @@ minimax_score_t minimax(tictactoe_board_t *board, bool is_Xs_turn,
   //   printf("\n");
   // }
 
+  // printf("SCORE: %d DEPTH: %d\n", score, depth);
   return score;
 }
 
@@ -354,6 +368,19 @@ minimax_score_t minimax(tictactoe_board_t *board, bool is_Xs_turn,
 // (helper) function.
 tictactoe_location_t minimax_computeNextMove(tictactoe_board_t *board,
                                              bool is_Xs_turn) {
+  minimax(board, is_Xs_turn, 0);
   // printf("final score: %d\n", minimax(board, is_Xs_turn, 0));
+
+  for (uint8_t i = 0; i < 3; ++i) {
+    for (uint8_t j = 0; j < 3; ++j) {
+      printf(
+          "%3c",
+          ((board->squares[i][j] == MINIMAX_X_SQUARE)
+               ? 'X'
+               : ((board->squares[i][j] == MINIMAX_EMPTY_SQUARE) ? '_' : 'O')));
+    }
+    printf("\n");
+  }
+  printf("\n");
   return choice;
 }
