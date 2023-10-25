@@ -2,10 +2,14 @@
 #include "ticTacToe.h"
 #include <stdio.h>
 
-#define NUM_POSSIBLE_LOCATIONS 9
+#define DEBUG 0
+
+#define NUM_POSSIBLE_LOCATIONS 9 // The number of possible places on a board
+
 #define MAX 1
 #define MIN 0
 
+// The following values are used to calculate the board score
 #define X_SQUARE_VALUE 1
 #define EMPTY_SQUARE_VALUE 0
 #define O_SQUARE_VALUE -1
@@ -20,11 +24,15 @@
 #define TR_BL_DIAG 7
 
 #define DIAG_BOUND 3
+// END
 
-#define NULL_SPACE 20
+#define NULL_SPACE                                                             \
+  20 // Used as a filler in the score table. Prevents unused spaces from being
+     // considered valid
 
 static tictactoe_location_t choice;
 
+// Stores the score table and move table for an iteration
 typedef struct {
   tictactoe_location_t move_table[NUM_POSSIBLE_LOCATIONS];
 
@@ -44,7 +52,8 @@ typedef struct {
 minimax_score_t minimax_computeBoardScore(tictactoe_board_t *board,
                                           bool is_Xs_turn) {
 
-  // A draw is only possible if there are not empty squares
+  // A draw is only possible if there are not empty squares. Thus is an empty
+  // square is found we must indicate so
   bool empty_square_found = false;
   bool x_win = false;
   bool o_win = false;
@@ -58,6 +67,8 @@ minimax_score_t minimax_computeBoardScore(tictactoe_board_t *board,
 
     for (uint8_t column = 0; column < TICTACTOE_BOARD_COLUMNS; ++column) {
 
+      // Check if square is empty. If so fill with the empty square valued
+      // Do the same for X and O squares
       if (board->squares[row][column] == MINIMAX_EMPTY_SQUARE) {
         scoring_board[row][column] = EMPTY_SQUARE_VALUE;
         empty_square_found = true; // An empty square was found. This means the
@@ -72,14 +83,6 @@ minimax_score_t minimax_computeBoardScore(tictactoe_board_t *board,
     }
   }
 
-  // DEBUG
-  // for (uint8_t row = 0; row < TICTACTOE_BOARD_ROWS; ++row) {
-  //   for (uint8_t column = 0; column < TICTACTOE_BOARD_COLUMNS; ++column) {
-  //     printf("%3d", scoring_board[row][column]);
-  //   }
-  //   printf("\n");
-  // }
-
   int8_t row_column_diag_sums[NUM_ROWS_COLUMNS_DIAGS] = {
       0, 0, 0, 0, 0, 0, 0, 0}; // [0-2] rows, [3-5]
                                // columns, [6] top left
@@ -89,21 +92,10 @@ minimax_score_t minimax_computeBoardScore(tictactoe_board_t *board,
 
   // Calulate the sums accross rows, columns, and diagonals
   // Calculate row sums
-
-  // DEBUG
-  // for (uint8_t i = 0; i < 8; ++i) {
-  //   printf("rcds before[%d]: %d\n", i, row_column_diag_sums[i]);
-  // }
-
   for (uint8_t row = 0; row < TICTACTOE_BOARD_ROWS; ++row) {
     for (uint8_t column = 0; column < TICTACTOE_BOARD_COLUMNS; ++column) {
       row_column_diag_sums[row] += scoring_board[row][column];
-      // printf("row_column_diag_sums[%d] + scoring_board[%d][%d]:%d = %d\n",
-      // row,
-      //        row, column, scoring_board[row][column],
-      //        row_column_diag_sums[row]);
     }
-    // printf("ROW [%d] SUM: %d\n", row, row_column_diag_sums[row]);
   }
 
   // Calculate column sums
@@ -125,15 +117,11 @@ minimax_score_t minimax_computeBoardScore(tictactoe_board_t *board,
         scoring_board[DIAG_BOUND - index - 1][index];
   }
 
-  // DEBUG
-  // for (uint8_t i = 0; i < 8; ++i) {
-  //   printf("rcds after[%d]: %d\n", i, row_column_diag_sums[i]);
-  // }
-
   // Determine if X won, O won, Draw, or not end game
   // Check to see if any of the rows, columns, or diagonals add up to 3. This
   // indicates an X win
   for (uint8_t i = 0; i < NUM_ROWS_COLUMNS_DIAGS; ++i) {
+    // Check sums
     if (row_column_diag_sums[i] == MAX_WIN_SUM) {
       x_win = true;
     } else if (row_column_diag_sums[i] == MIN_WIN_SUM) {
@@ -143,6 +131,7 @@ minimax_score_t minimax_computeBoardScore(tictactoe_board_t *board,
     }
   }
 
+  // Check all three end game states
   if (x_win) {
     return MINIMAX_X_WINNING_SCORE;
   } else if (o_win) {
@@ -158,6 +147,7 @@ minimax_score_t minimax_computeBoardScore(tictactoe_board_t *board,
 
 // Init the board to all empty squares.
 void minimax_initBoard(tictactoe_board_t *board) {
+  // Iterate over all squares and fill them with empty squares
   for (uint8_t row = 0; row < TICTACTOE_BOARD_ROWS; ++row) {
     for (uint8_t column = 0; column < TICTACTOE_BOARD_COLUMNS; ++column) {
       board->squares[row][column] = MINIMAX_EMPTY_SQUARE;
@@ -167,7 +157,8 @@ void minimax_initBoard(tictactoe_board_t *board) {
 
 // Determine that the game is over by looking at the score.
 bool minimax_isGameOver(minimax_score_t score) {
-  if (score != -1) {
+  // Check if game is over
+  if (score != MINIMAX_NOT_ENDGAME) {
     return true;
   } else {
     return false;
@@ -175,6 +166,7 @@ bool minimax_isGameOver(minimax_score_t score) {
 }
 
 // false for min. true for max
+// get the index in the score table for a min win or a max win
 uint8_t minimax_getMinMaxIndex(minimax_score_t score_table[], bool min_or_max) {
 
   uint8_t min_max_index;
@@ -183,6 +175,8 @@ uint8_t minimax_getMinMaxIndex(minimax_score_t score_table[], bool min_or_max) {
   minimax_score_t prev_score;
   minimax_score_t min_max_score;
 
+  // Iterate over score table. find the first non null value and
+  // record the corresponding index and value
   for (uint8_t index = 0; index < NUM_POSSIBLE_LOCATIONS; ++index) {
     if (score_table[index] != NULL_SPACE) {
       min_max_index = index;
@@ -191,14 +185,9 @@ uint8_t minimax_getMinMaxIndex(minimax_score_t score_table[], bool min_or_max) {
     }
   }
 
-  // for (uint8_t index = 0; index < 9; ++index) {
-  //   printf("%3d", score_table[index]);
-  // }
-  // printf("\n");
-
   // Compute max
   if (min_or_max) {
-    // printf("COMPUTING MAX\n");
+    // Iterate over score table. Find the max value
     for (uint8_t score_index = 0; score_index < NUM_POSSIBLE_LOCATIONS;
          ++score_index) {
       if ((score_table[score_index] != NULL_SPACE) &&
@@ -210,7 +199,7 @@ uint8_t minimax_getMinMaxIndex(minimax_score_t score_table[], bool min_or_max) {
   }
   // Compute min
   else {
-    // printf("COMPUTING MIN\n");
+    // Iterate over score table. Find the min value
     for (uint8_t score_index = 0; score_index < NUM_POSSIBLE_LOCATIONS;
          ++score_index) {
       if ((score_table[score_index] != NULL_SPACE) &&
@@ -224,7 +213,9 @@ uint8_t minimax_getMinMaxIndex(minimax_score_t score_table[], bool min_or_max) {
   return min_max_index;
 }
 
+// Initializes board table
 void minimax_initializeBoardTable(board_table_t *table) {
+  // sets all values to NULL
   for (uint8_t i = 0; i < NUM_POSSIBLE_LOCATIONS; ++i) {
     table->move_table[i].row = NULL_SPACE;
     table->move_table[i].column = NULL_SPACE;
@@ -232,6 +223,7 @@ void minimax_initializeBoardTable(board_table_t *table) {
   }
 }
 
+// Minimax algorithm for Tic Tac Toe
 minimax_score_t minimax(tictactoe_board_t *board, bool is_Xs_turn,
                         uint8_t depth) {
 
@@ -239,25 +231,10 @@ minimax_score_t minimax(tictactoe_board_t *board, bool is_Xs_turn,
   board_table_t board_table;
   minimax_initializeBoardTable(&board_table);
 
+  // Check if game is over. If so return score
   if (minimax_isGameOver(minimax_computeBoardScore(board, is_Xs_turn))) {
     // Recursion base case, there has been a win or a draw.
     // Evaluate board based upon prev player's turn.
-    // printf("BASE CASE REACHED. SCORE: %d\n",
-    //        minimax_computeBoardScore(board, !is_Xs_turn));
-    // for (uint8_t i = 0; i < 3; ++i) {
-    //   for (uint8_t j = 0; j < 3; ++j) {
-    //     printf("%3c",
-    //            ((board->squares[i][j] == MINIMAX_X_SQUARE)
-    //                 ? 'X'
-    //                 : ((board->squares[i][j] == MINIMAX_EMPTY_SQUARE) ? '_'
-    //                                                                   :
-    //                                                                   'O')));
-    //   }
-    //   printf("\n");
-    // }
-    // printf("\n");
-
-    // printf("\n");
     return (minimax_computeBoardScore(board, !is_Xs_turn) / depth);
   }
 
@@ -265,6 +242,7 @@ minimax_score_t minimax(tictactoe_board_t *board, bool is_Xs_turn,
   // This loop will generate all possible boards and call
   // minimax recursively for every empty square
   uint8_t current_square = 0;
+  // Iterate over entire board. Run minimax for each empty square
   for (uint8_t row = 0; row < TICTACTOE_BOARD_ROWS; ++row) {
     for (uint8_t column = 0; column < TICTACTOE_BOARD_COLUMNS; ++column) {
       if (board->squares[row][column] == MINIMAX_EMPTY_SQUARE) {
@@ -273,32 +251,11 @@ minimax_score_t minimax(tictactoe_board_t *board, bool is_Xs_turn,
         board->squares[row][column] =
             is_Xs_turn ? MINIMAX_X_SQUARE : MINIMAX_O_SQUARE;
 
-        // Recursively call minimax to get the best score,
-        // assuming player choses to play at this location.
-        // printf("DEPTH: %d\n", depth);
-        // printf("NEW MOVE AT [%d][%d]\n", row, column);
-        // for (uint8_t i = 0; i < 3; ++i) {
-        //   for (uint8_t j = 0; j < 3; ++j) {
-        //     printf("%3c", ((board->squares[i][j] == MINIMAX_X_SQUARE)
-        //                        ? 'X'
-        //                        : ((board->squares[i][j] ==
-        //                        MINIMAX_EMPTY_SQUARE)
-        //                               ? '_'
-        //                               : 'O')));
-        //   }
-        //   printf("\n");
-        // }
-        // printf("\n");
-
         score = minimax(board, !is_Xs_turn, (depth + 1));
 
         board_table.score_table[current_square] = score;
         board_table.move_table[current_square].row = row;
         board_table.move_table[current_square].column = column;
-        // for (uint8_t index = 0; index < 9; ++index) {
-        //   printf("%3d", board_table.score_table[index]);
-        // }
-        // printf("\n");
 
         // Undo the change to the board
         board->squares[row][column] = MINIMAX_EMPTY_SQUARE;
@@ -306,17 +263,14 @@ minimax_score_t minimax(tictactoe_board_t *board, bool is_Xs_turn,
       ++current_square;
     }
   }
-  // for (uint8_t index = 0; index < 9; ++index) {
-  //   printf("%2d %2d\n", board_table.move_table[index].row,
-  //          board_table.move_table[index].column);
-  // }
-  // printf("\n");
 
   // Once you get here, you have iterated over empty squares at this level.
   // All of the scores have been computed in the move-score table for boards
   // at this level. Now you need to return the score depending upon whether
   // you are computing min or max.
   uint8_t index;
+  // Check if X or O turn
+  // Return corresponding score for X or O turn
   if (is_Xs_turn) {
     index = minimax_getMinMaxIndex(board_table.score_table, MAX);
     choice = board_table.move_table[index]; // get the move with the highest
@@ -330,34 +284,9 @@ minimax_score_t minimax(tictactoe_board_t *board, bool is_Xs_turn,
     score = board_table
                 .score_table[index]; // lowest score in the move - score table.;
   }
-
-  // if (depth == 0) {
-  //   printf("DEPTH 0:\n");
-  //   for (uint8_t index = 0; index < 9; ++index) {
-  //     printf("%3d", board_table.score_table[index]);
-  //   }
-  //   printf("\n");
-  // }
-
-  // printf("final index: %d\n", index);
-
-  // if (depth == 0) {
-  //   for (uint8_t index = 0; index < 9; ++index) {
-  //     printf("%2d %2d\n", board_table.move_table[index].row,
-  //            board_table.move_table[index].column);
-  //   }
-  //   printf("\n");
-  // }
-
-  // printf("SCORE: %d DEPTH: %d\n", score, depth);
   return score;
 }
 
-// This routine is not recursive but will invoke the recursive minimax
-// function. You will call this function from the controlling state machine
-// that you will implement in a later milestone. It computes the row and
-// column of the next move based upon: the current board and player.
-//
 // When called from the controlling state machine, you will call this
 // function as follows:
 // 1. If the computer is playing as X, you will call this function with
@@ -369,18 +298,5 @@ minimax_score_t minimax(tictactoe_board_t *board, bool is_Xs_turn,
 tictactoe_location_t minimax_computeNextMove(tictactoe_board_t *board,
                                              bool is_Xs_turn) {
   minimax(board, is_Xs_turn, 0);
-  // printf("final score: %d\n", minimax(board, is_Xs_turn, 0));
-
-  for (uint8_t i = 0; i < 3; ++i) {
-    for (uint8_t j = 0; j < 3; ++j) {
-      printf(
-          "%3c",
-          ((board->squares[i][j] == MINIMAX_X_SQUARE)
-               ? 'X'
-               : ((board->squares[i][j] == MINIMAX_EMPTY_SQUARE) ? '_' : 'O')));
-    }
-    printf("\n");
-  }
-  printf("\n");
   return choice;
 }

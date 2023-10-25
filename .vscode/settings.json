@@ -15,6 +15,7 @@
         "intervaltimer.h": "c",
         "touchscreen.h": "c",
         "clockcontrol.h": "c",
-        "minimax.h": "c"
+        "minimax.h": "c",
+        "stdio.h": "c"
     }
 }
